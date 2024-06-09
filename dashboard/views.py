@@ -684,6 +684,7 @@ def AddSchoolContract(request):
         data = MySchoolContract(request.POST)
         if data.is_valid():
             data.save()
+            messages.success(request, 'Contract Added Successfully...')
             return redirect('schoolcontractall')
         else:
             messages.error(request, 'Something Went Wrong..!')
@@ -796,7 +797,7 @@ def SchoolContractView(request, pk):
             messages.warning(request, "Data Updated")
         else:
             try:
-                form = TrackSchoolContract(contract = get_sche, date = dat, status = status)
+                form = TrackSchoolContract(contract = get_sche, date = dat, status = status, cont = data)
                 form.save()
                 messages.success(request, "Data Added")
             except:
@@ -855,17 +856,27 @@ def ContractReport(request, pk):
         month = int(request.POST['month'])
 
     # Filter contracts by the specific month
-        contract = TrackSchoolContract.objects.filter(
-            contract = pk,
-            date__year=year,
-            date__month=month
+        contract = SchoolContract.objects.filter(
+            id = pk,
+            # date__year=year,
+            # date__month=month
         ).exists()
 
         if contract:
-            contracts = TrackSchoolContract.objects.filter(
-            contract = pk,
-            date__year=year,
-            date__month=month
+            contracts = SchoolContract.objects.get(
+            id = pk,
+            # date__year=year,
+            # date__month=month
+            )
+
+            sche = Schedule.objects.filter(
+                school = contracts
+            )
+
+            tscontract = TrackSchoolContract.objects.filter(
+                cont = contracts,
+                date__year = year,
+                date__month = month
             )
             
             wb = Workbook()
@@ -873,17 +884,32 @@ def ContractReport(request, pk):
             ws.title = f"Contracts {year}-{month:02d}"
 
             # Write headers
-            headers = ['Contract School Name', 'Date', 'Status']
+            headers = ['Contract School Name', 'Schedule', 'Date', 'Status', 'DropTime', 'PickupTime', 'Price', 'PickUpPoint', 'Destination', 'Vias']
             ws.append(headers)
 
             # Write data
-            for contract in contracts:
+            # for contract in contracts:
+            for i, j in zip(tscontract, sche):
                 ws.append([
-                    str(contract.contract),  # Adjust if you need to access specific fields
-                    contract.date.strftime('%Y-%m-%d') if contract.date else '',
-                    contract.status,
-                    # contract.time_stamp.strftime('%Y-%m-%d %H:%M:%S')
+                    contracts.contract_school_name,
+                    j.name,
+                    str(i.date.strftime('%Y-%m-%d') if i.date else '',),
+                    i.status,
+                    str(j.drop_time if j.drop_time else '',),  # Adjust if you need to access specific fields
+                    str(j.pick_time if j.pick_time else '',),
+                    j.price,
+                    j.pickup_location,
+                    j.drop_location,
+                    j.vias
                 ])
+
+            # for contract in sche:
+            #     ws.append([
+            #         str(contract.drop_time.strftime('%Y-%m-%d') if contract.drop_time else '',),  # Adjust if you need to access specific fields
+            #         contract.pick_time.strftime('%Y-%m-%d') if contract.pick_time else '',
+            #         contract.price,
+            #         # contract.time_stamp.strftime('%Y-%m-%d %H:%M:%S')
+            #     ])
 
             # Prepare the response
             response = HttpResponse(
@@ -903,19 +929,6 @@ def ContractReport(request, pk):
         return HttpResponse("nothing")
 
 
-        # Create an Excel workbook and sheet
-        
-
-
-
-
-
-
-
-
-
-
-
 
 def ScheduleAdd(request, pk):
     form = ScheduleForm()
@@ -925,6 +938,7 @@ def ScheduleAdd(request, pk):
             obj = data.save(commit=False)
             obj.school = SchoolContract.objects.get(id = pk)
             obj.save()
+            messages.success(request, "Schedule Added Successfully...")
     context = {
         'form': form
     }
@@ -939,6 +953,7 @@ def Scheduleedit(request, pk):
         data = ScheduleForm(request.POST, instance=schedule)
         if data.is_valid():
             data.save()
+            messages.success(request, "Successfully Updated..")
 
     context = {
         'form':form,
@@ -950,4 +965,5 @@ def Scheduleedit(request, pk):
 def ScheduleDelete(request, pk):
     schedule = Schedule.objects.get(id = pk)
     schedule.delete()
+    messages.error(request, "Deleted Succesfully..")
     return redirect('schoolcontractall')
