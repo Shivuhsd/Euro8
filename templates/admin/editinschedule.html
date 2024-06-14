@@ -7,13 +7,12 @@
 
 {% block content %}
 
-    <form action="" method="POST" class="mx-5 px-5">
+    <form action="" method="POST" class="mx-0 border border-primary p-3 shadow">
+        <h4 class="my-3">Edit The InSchedule</h4>
         {% csrf_token %}
         {{form.as_p}}
-        <button class="btn btn-primary">Submit</button>
+        <button class="btn btn-primary">Update</button>
     </form>
-
-    
 
     <script>
       

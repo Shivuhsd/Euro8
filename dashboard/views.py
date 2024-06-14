@@ -6,9 +6,9 @@ import users.models
 import users.custom
 import users.forms
 import accounts.models
-from . models import businessForm, Fleet, ReplyCus, Airports, City, Rates, SchoolContract, TrackSchoolContract, Schedule
+from . models import businessForm, Fleet, ReplyCus, Airports, City, Rates, SchoolContract, TrackSchoolContract, Schedule, InSchedule
 from django.http import HttpResponse, JsonResponse
-from .forms import MyFleets, MyReply, MyAirport, MyCity, MyRates, MySchoolContract, ScheduleForm
+from .forms import MyFleets, MyReply, MyAirport, MyCity, MyRates, MySchoolContract, ScheduleForm, InScheduleForm
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from datetime import datetime, timedelta, timezone, date
@@ -779,6 +779,7 @@ def SchoolContractView(request, pk):
     formatted_today = today.strftime('%Y-%m-%d')
     data = SchoolContract.objects.get(id = pk)
     schedule = Schedule.objects.filter(school = pk)
+    inSchedule = InSchedule.objects.filter(contract = data.id)
 
     if request.method == 'POST':
         sched = request.POST['schedule']
@@ -786,18 +787,26 @@ def SchoolContractView(request, pk):
         dat = request.POST['date']
         check_date = datetime.strptime(dat, '%Y-%m-%d').date()
 
-        get_sche = Schedule.objects.get(id = sched)
+       
+        get_sche = Schedule.objects.filter(id = sched).exists()
+        if get_sche:
+           pass
+        else:
+            get_sub_sche = InSchedule.objects.get(id = sched)
+            get_sche = Schedule.objects.get(id = get_sub_sche.school.id)
+
 
         check = TrackSchoolContract.objects.filter(date=check_date, contract = get_sche).exists()
 
         if check:
             data = TrackSchoolContract.objects.get(date = check_date, contract = get_sche)
+            data.sub_Schedule = get_sub_sche
             data.status = status
             data.save()
             messages.warning(request, "Data Updated")
         else:
             try:
-                form = TrackSchoolContract(contract = get_sche, date = dat, status = status, cont = data)
+                form = TrackSchoolContract(contract = get_sche, date = dat, status = status)
                 form.save()
                 messages.success(request, "Data Added")
             except:
@@ -823,6 +832,7 @@ def SchoolContractView(request, pk):
             'year': year, 
             'month': month,
             'schedule': schedule,
+            'inschedule': inSchedule
         }
     return render(request, 'admin/schoolcontractview.html', context)
 
@@ -884,32 +894,18 @@ def ContractReport(request, pk):
             ws.title = f"Contracts {year}-{month:02d}"
 
             # Write headers
-            headers = ['Contract School Name', 'Schedule', 'Date', 'Status', 'DropTime', 'PickupTime', 'Price', 'PickUpPoint', 'Destination', 'Vias']
+            headers = ['Contract School Name', 'Date', 'Status']
             ws.append(headers)
 
             # Write data
             # for contract in contracts:
             for i, j in zip(tscontract, sche):
                 ws.append([
-                    contracts.contract_school_name,
-                    j.name,
-                    str(i.date.strftime('%Y-%m-%d') if i.date else '',),
-                    i.status,
-                    str(j.drop_time if j.drop_time else '',),  # Adjust if you need to access specific fields
-                    str(j.pick_time if j.pick_time else '',),
-                    j.price,
-                    j.pickup_location,
-                    j.drop_location,
-                    j.vias
+                    str(contract.contract),  # Adjust if you need to access specific fields
+                    contract.date.strftime('%Y-%m-%d') if contract.date else '',
+                    contract.status,
+                    # contract.time_stamp.strftime('%Y-%m-%d %H:%M:%S')
                 ])
-
-            # for contract in sche:
-            #     ws.append([
-            #         str(contract.drop_time.strftime('%Y-%m-%d') if contract.drop_time else '',),  # Adjust if you need to access specific fields
-            #         contract.pick_time.strftime('%Y-%m-%d') if contract.pick_time else '',
-            #         contract.price,
-            #         # contract.time_stamp.strftime('%Y-%m-%d %H:%M:%S')
-            #     ])
 
             # Prepare the response
             response = HttpResponse(
@@ -967,3 +963,57 @@ def ScheduleDelete(request, pk):
     schedule.delete()
     messages.error(request, "Deleted Succesfully..")
     return redirect('schoolcontractall')
+
+
+
+# Add In Schedule
+def AddInSchedule(request, pk):
+    data = InSchedule.objects.filter(school = pk)
+    form = InScheduleForm()
+    sch = Schedule.objects.get(id = pk)
+    cont = SchoolContract.objects.get(id = sch.school.id)
+
+    if request.method == 'POST':
+        frm = InScheduleForm(request.POST)
+        if frm.is_valid():
+            obj = frm.save(commit=False)
+            obj.school = sch
+            obj.contract = cont
+            obj.save()
+        else:
+            messages.error(request, 'Something Went Wrong...')
+    context = {
+        'form': form,
+        'data':data
+    }
+    return render(request, 'admin/addinschedule.html', context)
+
+
+
+# Edit In Schedule
+def EditInSchedule(request, pk):
+    data = InSchedule.objects.get(id = pk)
+    form = InScheduleForm(instance=data)
+    sch = Schedule.objects.get(id = data.school.id)
+
+    if request.method == 'POST':
+        frm = InScheduleForm(request.POST, instance=data)
+        if frm.is_valid():
+            frm.save()
+            return redirect(reverse('addinschedule', args=[sch.id]))
+        else:
+            messages.error(request, "Something Went Wrong...")
+    context = {
+        'form': form
+    }
+    return render(request, 'admin/editinschedule.html', context)
+
+
+
+
+# Delete In Schedule
+def DeleteInSchedule(request, pk):
+    data = InSchedule.objects.get(id = pk)
+    sch = Schedule.objects.get(id = data.school.id)
+    data.delete()
+    return redirect(reverse('addinschedule', args=[sch.id]))

@@ -7,13 +7,47 @@
 
 {% block content %}
 
-    <form action="" method="POST" class="mx-5 px-5">
+    <form action="" method="POST" class="mx-0 border border-primary p-3 shadow" >
         {% csrf_token %}
         {{form.as_p}}
         <button class="btn btn-primary">Submit</button>
     </form>
 
-    
+    <div class="container shadow p-3 my-3 border border-primary">
+        <h4>Schedules</h4>
+        <hr>
+        <h4>Available Schedules</h4>
+        <table class="my-4 table">
+            <tr>
+                <th>Name</th>
+                <th>Pick Up</th>
+                <th>Drop</th>
+                <th>Vias</th>
+                <th>Price</th>
+                <th>Created</th>
+                <th>Edit</th>
+                <th>Delete</th>
+            </tr>
+            {% for i in data %}
+            <tr>
+                <td>{{i.name}}</td>
+            
+                <td>{{i.pickup_location}}</td>
+                <td>{{i.drop_location}}</td>
+                <td>{{i.vias}}</td>
+                <td>{{i.price}}</td>
+                <td>{{i.timestamp}}</td>
+                <td><a href="{% url 'editinschedule' i.id %}"><button class="btn btn-primary">Edit</button></a></td>
+                <td><a href="{% url 'deleteinschedule' i.id %}"><button class="btn btn-danger">Delete</button></a></td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+
+
+
+
+
 
     <script>
       

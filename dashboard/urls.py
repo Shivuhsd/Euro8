@@ -49,8 +49,14 @@ urlpatterns = [
     #Schedule Views
     path('scheduleadd/<str:pk>/', views.ScheduleAdd, name='scheduleadd'),
     path('scheduleedit/<str:pk>/', views.Scheduleedit, name='scheduleedit'),
-    path('scheduledelete/<str:pk>/', views.ScheduleDelete, name='scheduledelete'),
+    path('scheduledelete/<str:pk>/', views.ScheduleDelete, name='scheduledelete'),\
+    
 
+
+    # InScheduleViews
+    path('inscheduleadd/<str:pk>/', views.AddInSchedule, name='addinschedule'),
+    path('inscheduleedit/<str:pk>/', views.EditInSchedule, name='editinschedule'),
+    path('inscheduledelete/<str:pk>/', views.DeleteInSchedule, name='deleteinschedule'),
 
     #Custom Email Sender
     # path('portmail/', views.PortMail, name='portmail')

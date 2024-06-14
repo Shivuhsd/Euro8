@@ -1,5 +1,5 @@
 from django.forms import ModelForm
-from . models import Fleet, Airports, City, Rates, SchoolContract, Schedule
+from . models import Fleet, Airports, City, Rates, SchoolContract, Schedule, InSchedule
 import users.models
 
 
@@ -46,3 +46,12 @@ class ScheduleForm(ModelForm):
     class Meta:
         model = Schedule
         exclude = ('id', 'school', 'timestamp')
+
+
+
+
+       
+class InScheduleForm(ModelForm):
+    class Meta:
+        model = InSchedule
+        exclude = ('id', 'school', 'timestamp', 'contract')
